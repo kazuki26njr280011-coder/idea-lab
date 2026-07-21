@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>アイデア調査にご協力ください</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 1. はじめの説明 -->
+  <section id="intro">
+    <h1>アイデア調査にご協力ください</h1>
+    <div class="card">
+      <p>身近なテーマについて、アイデアを考えていただく調査です。全部で3回、それぞれ3分ほどです。合わせて10〜15分で終わります。</p>
+      <p>AIの使い方について調べています。難しい知識は必要ありません。思いついたことをそのまま書いてください。</p>
+      <p class="note">
+        回答は任意です。途中でやめたくなったら、いつでもページを閉じていただいて構いません。<br>
+        いただいた回答は統計的に処理し、リベラルアーツ応用の発表以外の目的では使用しません。<br>
+        お名前・メールアドレスなど、個人が特定される情報は一切収集していません。<br>
+        入力していただいた内容は、AIの返答を作るためGoogleのAPIに送信されます。個人が特定される内容は入力しないでください。
+      </p>
+    </div>
+    <button id="start">はじめる</button>
+  </section>
+
+  <!-- 2. アイデアを書く -->
+  <section id="task" class="hidden">
+    <div class="progress" id="progress"></div>
+    <div class="theme" id="theme"></div>
+    <div id="err" class="err hidden"></div>
+
+    <!-- 条件B：AIの案を見せる -->
+    <div id="bBox" class="card hidden">
+      <h2>AIが出したアイデア</h2>
+      <p class="note">下の中から良いと思うものを選び、自分の言葉で書き直したり、ふくらませたりしてください。</p>
+      <ul class="ai" id="bList"></ul>
+    </div>
+
+    <!-- 条件C：まず自分の案 -->
+    <div id="cStep1" class="card hidden">
+      <h2>まず、あなたのアイデアを1つ書いてください</h2>
+      <textarea id="cIdea" placeholder="例：人気のマンガを置く" style="min-height:90px"></textarea>
+      <div style="height:12px"></div>
+      <button id="cSend">送信する</button>
+    </div>
+
+    <!-- 条件C：AIからの指摘 -->
+    <div id="cBox" class="card hidden">
+      <h2>AIからの指摘</h2>
+      <ul class="ai" id="cList"></ul>
+      <p class="note">この指摘を読んだうえで、もう一度アイデアを考えてみてください。</p>
+    </div>
+
+    <div id="writeBox" class="card hidden">
+      <div class="timer" id="timer">3:00</div>
+      <h2>アイデアを書いてください</h2>
+      <p class="note">1行に1つ書いてください。いくつでも構いません。時間が過ぎても続けて大丈夫です。</p>
+      <textarea id="answer" placeholder="1行に1つずつ書いてください"></textarea>
+      <div style="height:12px"></div>
+      <button id="next">書けたので次へ</button>
+    </div>
+
+    <div id="loading" class="card spin hidden">AIが考えています…（10秒ほどかかります）</div>
+  </section>
+
+  <!-- 3. 完了 -->
+  <section id="done" class="hidden">
+    <h1>ありがとうございました</h1>
+    <div class="card">
+      <p>ご協力に感謝します。結果は9月の授業で発表します。</p>
+      <p class="note">このページは閉じていただいて構いません。</p>
+    </div>
+  </section>
+
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>集計（管理用）</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>集計</h1>
+  <div id="out" class="card">読み込み中…</div>
+  <button id="csv" class="ghost">CSVをダウンロード</button>
+</div>
+<script>
+const key = new URLSearchParams(location.search).get("key") || "";
+const COND_LABEL = { A: "A：AIなし", B: "B：AIに案を出させた", C: "C：AIに反論させた" };
+const Q_LABEL = { try: "やってみたい", surprise: "思いつかなそう" };
+
+fetch("/api/stats?key=" + encodeURIComponent(key))
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) { document.getElementById("out").textContent = d.error; return; }
+    let h = `<p>参加者：${d.参加者数}人／投票：${d.投票数}回</p>`;
+    h += `<p>アイデア数　A:${d.アイデア数.A}　B:${d.アイデア数.B}　C:${d.アイデア数.C}</p>`;
+    for (const q of ["try", "surprise"]) {
+      h += `<h2>${Q_LABEL[q]}</h2><table><tr><th>条件</th><th>勝ち</th><th>負け</th><th>勝率</th></tr>`;
+      for (const c of ["A", "B", "C"]) {
+        const s = d.勝率[q][c];
+        h += `<tr><td>${COND_LABEL[c]}</td><td>${s.win}</td><td>${s.lose}</td><td>${s.rate === null ? "－" : s.rate + "%"}</td></tr>`;
+      }
+      h += `</table>`;
+    }
+    document.getElementById("out").innerHTML = h;
+  })
+  .catch(() => { document.getElementById("out").textContent = "読み込みに失敗しました"; });
+
+document.getElementById("csv").onclick = () => {
+  location.href = "/api/export.csv?key=" + encodeURIComponent(key);
+};
+</script>
+</body>
+</html>

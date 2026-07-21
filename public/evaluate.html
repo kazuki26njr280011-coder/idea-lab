@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>アイデア評価にご協力ください</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <section id="intro">
+    <h1>アイデア評価にご協力ください</h1>
+    <div class="card">
+      <p>集まったアイデアを、2つずつ見比べていただきます。どちらか選んで押すだけです。全部で20回、3分ほどで終わります。</p>
+      <p class="note">
+        回答は任意です。途中でやめたくなったら、いつでもページを閉じていただいて構いません。<br>
+        いただいた回答は統計的に処理し、リベラルアーツ応用の発表以外の目的では使用しません。<br>
+        お名前・メールアドレスなど、個人が特定される情報は一切収集していません。
+      </p>
+    </div>
+    <button id="start">はじめる</button>
+  </section>
+
+  <section id="quiz" class="hidden">
+    <div class="bar"><div id="barFill" style="width:0%"></div></div>
+    <div class="progress" id="progress"></div>
+    <h2 id="question"></h2>
+    <div class="pair">
+      <button class="choice" id="left"></button>
+      <button class="choice" id="right"></button>
+    </div>
+  </section>
+
+  <section id="switch" class="hidden">
+    <div class="card">
+      <h2>ここから質問が変わります</h2>
+      <p id="switchText"></p>
+    </div>
+    <button id="cont">続ける</button>
+  </section>
+
+  <section id="notReady" class="hidden">
+    <h1>準備中です</h1>
+    <div class="card"><p>まだアイデアが集まっていません。しばらくしてからもう一度お試しください。</p></div>
+  </section>
+
+  <section id="done" class="hidden">
+    <h1>ありがとうございました</h1>
+    <div class="card">
+      <p>ご協力に感謝します。結果は9月の授業で発表します。</p>
+      <p class="note">このページは閉じていただいて構いません。</p>
+    </div>
+  </section>
+
+</div>
+<script src="/evaluate.js"></script>
+</body>
+</html>
