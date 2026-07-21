@@ -3,11 +3,28 @@
 
 import { THEMES, B_IDEA_COUNT, PAIRS_TRY, PAIRS_SURPRISE, PROMPT_B, PROMPT_C } from "./config.js";
 
-const kv = await Deno.openKv();
+// KVは最初に使うときに開く。
+// 起動時に開くと、KV未接続のときアプリ全体が落ちて原因が読めなくなるため。
+let _kv = null;
+async function getKv() {
+  if (_kv) return _kv;
+  try {
+    _kv = await Deno.openKv();
+    return _kv;
+  } catch (e) {
+    throw new Error(
+      "KVデータベースが接続されていません。" +
+      "Deno Deployのダッシュボード → Databases → Provision Database でKVを作り、" +
+      "Assignでこのアプリに割り当ててから再デプロイしてください。（元エラー: " + e.message + "）"
+    );
+  }
+}
 
 const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
 const ADMIN_KEY = Deno.env.get("ADMIN_KEY") || "";
-const MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash";
+// gemini-2.0-flash は 2026-06-01 に停止済み（404になる）。
+// モデル名は変わることがあるので、環境変数 GEMINI_MODEL で上書きできるようにしている。
+const MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
 
 if (!GEMINI_KEY) console.warn("[警告] GEMINI_API_KEY が未設定です。条件B/CでAIが使えません。");
 if (!ADMIN_KEY) console.warn("[警告] ADMIN_KEY が未設定です。管理画面が開けません。");
@@ -35,6 +52,7 @@ const json = (code, obj) =>
 // ---------- KV ----------
 
 async function listAll(prefix) {
+  const kv = await getKv();
   const out = [];
   for await (const e of kv.list({ prefix: [prefix] })) out.push(e.value);
   return out;
@@ -148,6 +166,7 @@ Deno.serve(async (req, info) => {
       const theme = THEMES.find((t) => t.id === themeId);
       if (!theme) return json(400, { error: "お題が見つかりません" });
 
+      const kv = await getKv();
       const cached = await kv.get(["cacheB", themeId]);
       if (cached.value) return json(200, { ideas: cached.value });
 
@@ -177,6 +196,7 @@ Deno.serve(async (req, info) => {
       const texts = (Array.isArray(b.texts) ? b.texts : [])
         .map((s) => String(s).slice(0, 200).trim()).filter(Boolean).slice(0, 30);
 
+      const kv = await getKv();
       for (const text of texts) {
         const id = rid("i");
         await kv.set(["idea", id], { id, cond, themeId: theme.id, text, sessionId, createdAt: new Date().toISOString() });
@@ -202,6 +222,7 @@ Deno.serve(async (req, info) => {
 
     if (p === "/api/vote" && req.method === "POST") {
       const b = await req.json().catch(() => ({}));
+      const kv = await getKv();
       const [w, l] = await Promise.all([kv.get(["idea", b.winnerId]), kv.get(["idea", b.loserId])]);
       if (!w.value || !l.value) return json(400, { error: "対象が見つかりません" });
 
@@ -251,6 +272,50 @@ Deno.serve(async (req, info) => {
       return new Response("﻿" + rows.join("\n"), {
         headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="idea-lab.csv"' },
       });
+    }
+
+    // 診断用。Geminiが動かないときの原因を、そのまま表示する
+    if (p === "/api/health") {
+      if (!ADMIN_KEY || url.searchParams.get("key") !== ADMIN_KEY) return json(403, { error: "権限がありません" });
+
+      const out = {
+        モデル名: MODEL,
+        キーの有無: GEMINI_KEY ? "あり" : "なし（GEMINI_API_KEYが未設定）",
+        キーの先頭: GEMINI_KEY ? GEMINI_KEY.slice(0, 4) + "..." : "-",
+        キーの長さ: GEMINI_KEY ? GEMINI_KEY.length : 0,
+      };
+
+      // 使えるモデルの一覧を取りにいく（キーが有効かどうかもこれで分かる）
+      try {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_KEY}&pageSize=50`
+        );
+        const body = await r.text();
+        if (!r.ok) {
+          out.モデル一覧の取得 = `失敗 HTTP ${r.status}`;
+          out.返ってきた内容 = body.slice(0, 600);
+        } else {
+          const j = JSON.parse(body);
+          out.使えるモデル = (j.models || [])
+            .filter((m) => (m.supportedGenerationMethods || []).includes("generateContent"))
+            .map((m) => m.name.replace("models/", ""));
+          out.今の設定は使えるか = out.使えるモデル.includes(MODEL) ? "使える" : "使えない（上の一覧から選んでGEMINI_MODELに設定）";
+        }
+      } catch (e) {
+        out.モデル一覧の取得 = "例外: " + e.message;
+      }
+
+      // 実際に1回叩いてみる
+      try {
+        const t = await gemini("こんにちは、と一言だけ返してください。");
+        out.実際の呼び出し = "成功";
+        out.返答 = t.slice(0, 100);
+      } catch (e) {
+        out.実際の呼び出し = "失敗";
+        out.失敗の内容 = e.message.slice(0, 600);
+      }
+
+      return json(200, out);
     }
 
     if (p.startsWith("/api/")) return json(404, { error: "不明なAPI" });
